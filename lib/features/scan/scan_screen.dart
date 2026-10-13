@@ -249,8 +249,10 @@ class _ScanScreenState extends State<ScanScreen> {
           if (error != null && !busy)
             Padding(
               padding: const EdgeInsets.only(top: 16),
-              child: Text(error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              child: SelectableText(error!,
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 12)),
             ),
           if (sh != null && photo != null && !busy) ...[
             const SizedBox(height: 14),
