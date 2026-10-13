@@ -50,12 +50,15 @@ jobs:
 
       - name: ML Kit (lecture de texte sur le telephone)
         run: |
+          cp tool/proguard-rules.pro android/app/proguard-rules.pro
           if [ -f android/app/build.gradle.kts ]; then
             printf '\ndependencies {\n    implementation("com.google.mlkit:text-recognition:16.0.1")\n}\n' >> android/app/build.gradle.kts
-            tail -5 android/app/build.gradle.kts
+            printf '\nandroid {\n    buildTypes {\n        getByName("release") {\n            proguardFiles("proguard-rules.pro")\n        }\n    }\n}\n' >> android/app/build.gradle.kts
+            tail -16 android/app/build.gradle.kts
           else
             printf "\ndependencies {\n    implementation 'com.google.mlkit:text-recognition:16.0.1'\n}\n" >> android/app/build.gradle
-            tail -5 android/app/build.gradle
+            printf "\nandroid {\n    buildTypes {\n        release {\n            proguardFiles 'proguard-rules.pro'\n        }\n    }\n}\n" >> android/app/build.gradle
+            tail -16 android/app/build.gradle
           fi
 
       - name: Icone FazTyroid
