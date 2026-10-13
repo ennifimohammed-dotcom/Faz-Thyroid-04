@@ -33,6 +33,13 @@ class MainActivity : FlutterActivity() {
         return out.absolutePath
     }
 
+    /// Les 14 premieres lignes de la trace d'une erreur (diagnostic affiche dans l'application).
+    private fun trace(e: Throwable): String {
+        val sw = java.io.StringWriter()
+        e.printStackTrace(java.io.PrintWriter(sw))
+        return sw.toString().lines().take(14).joinToString("\n")
+    }
+
     /// Decode la photo (reduite a 2600 px max) et lit son orientation EXIF.
     private fun decodeForOcr(path: String): Pair<Bitmap, Int>? {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -224,19 +231,19 @@ class MainActivity : FlutterActivity() {
                                                 }
                                                 result.success(lines)
                                             } catch (e: Throwable) {
-                                                result.error("OCR_RESULT_FAILED", e.toString(), null)
+                                                result.error("OCR_RESULT_FAILED", trace(e), null)
                                             } finally {
                                                 recognizer.close()
                                             }
                                         }
                                         .addOnFailureListener { e ->
                                             recognizer.close()
-                                            result.error("OCR_FAILED", e.toString(), null)
+                                            result.error("OCR_FAILED", trace(e), null)
                                         }
                                 }
                             }
                         } catch (e: Throwable) {
-                            result.error("OCR_SETUP_FAILED", e.toString(), null)
+                            result.error("OCR_SETUP_FAILED", trace(e), null)
                         }
                     }
                     else -> result.notImplemented()
