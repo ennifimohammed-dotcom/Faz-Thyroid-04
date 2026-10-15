@@ -1,5 +1,5 @@
-/// Fonctions pures des graphiques (testables) : graduations de dates et
-/// position des points.
+// Fonctions pures des graphiques (testables) : graduations de dates et
+// position des points.
 
 const double _msPerDay = 86400000.0;
 
