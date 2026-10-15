@@ -98,7 +98,7 @@ class _ScanScreenState extends State<ScanScreen> {
       final parsed = parseLabRows(
         reconstructRows(lines),
         female: true,
-        profileName: st.profile.nameFr,
+        profileName: '${st.profile.nameFr} ${st.profile.nameAr}',
       );
       _clearRows();
       for (final r in parsed.results) {
@@ -263,7 +263,7 @@ class _ScanScreenState extends State<ScanScreen> {
             if (rows.isNotEmpty) ...[
               Text(s.t('scan_review'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700, color: kRoseDeep)),
+                      fontWeight: FontWeight.w700, color: context.brandDeep)),
               const SizedBox(height: 8),
               DateField(controller: date, label: s.t('date'), s: s),
               Padding(

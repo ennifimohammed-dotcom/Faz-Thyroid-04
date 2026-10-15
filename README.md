@@ -38,6 +38,7 @@ L'APK se trouve dans `build/app/outputs/flutter-apk/app-release.apk`.
 - Levothyrox : dose saisie / prescrite / réellement prise, timeline.
 - Consultations, autres analyses, journal des symptômes.
 - Scan d’une feuille de laboratoire (photo ou galerie) : lecture locale du texte (ML Kit embarqué, hors ligne), détection du nom, de la valeur, de l’unité, des bornes et de l’ordre des analyses, puis vérification avant enregistrement ; aucune valeur existante n’est écrasée.
+- Code secret à 4 chiffres (haché, jamais stocké en clair ; redemandé à l’ouverture et après 20 s en arrière-plan), 4 thèmes de couleur (rose, lavande, menthe, pêche), graphiques avec valeurs affichées sur chaque point et dates sans chevauchement.
 - Photos des analyses (galerie ou appareil photo) jointes aux bilans et autres analyses, avec visionneuse zoomable.
 - Codes couleur (vert normal, orange légèrement hors intervalle, rouge fortement hors intervalle, flèches ↑↓✓) dans Analyses, Timeline et Traitement.
 - Arabe (RTL) / français, thème clair/sombre, valeurs de référence modifiables.

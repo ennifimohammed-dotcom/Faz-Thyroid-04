@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../app/palette.dart';
 import '../../database/schema.dart';
 import '../../l10n/strings.dart';
 import '../../models/models.dart';
@@ -19,6 +22,9 @@ class AppState extends ChangeNotifier {
 
   String lang = 'fr';
   bool dark = false;
+  String paletteId = 'rose';
+  String? _pinHash;
+  String? _pinSalt;
   RefRanges refs = RefRanges.defaults();
   PatientProfile profile = const PatientProfile();
 
@@ -32,12 +38,77 @@ class AppState extends ChangeNotifier {
 
   S get s => S(lang);
 
+  AppPalette get palette => paletteById(paletteId);
+
+  // ---- Nom de la patiente -----------------------------------------------
+  bool get hasName =>
+      profile.nameFr.trim().isNotEmpty || profile.nameAr.trim().isNotEmpty;
+
+  /// Nom affiche : celui de la langue courante, sinon l'autre, sinon
+  /// l'invitation « Entrez le nom ».
+  String get displayName {
+    final primary = lang == 'ar' ? profile.nameAr : profile.nameFr;
+    final other = lang == 'ar' ? profile.nameFr : profile.nameAr;
+    if (primary.trim().isNotEmpty) return primary.trim();
+    if (other.trim().isNotEmpty) return other.trim();
+    return s.t('enter_name');
+  }
+
+  // ---- Code secret --------------------------------------------------------
+  bool get pinEnabled => (_pinHash ?? '').isNotEmpty;
+
+  static String _hashPin(String salt, String pin) =>
+      sha256.convert(utf8.encode('$salt:$pin')).toString();
+
+  Future<void> setPin(String pin) async {
+    final rnd = Random.secure();
+    final salt =
+        List.generate(16, (_) => rnd.nextInt(256).toRadixString(16).padLeft(2, '0'))
+            .join();
+    _pinSalt = salt;
+    _pinHash = _hashPin(salt, pin);
+    await prefs.setString('pin_salt', salt);
+    await prefs.setString('pin_hash', _pinHash!);
+    notifyListeners();
+  }
+
+  bool verifyPin(String pin) =>
+      pinEnabled && _hashPin(_pinSalt ?? '', pin) == _pinHash;
+
+  Future<void> clearPin() async {
+    _pinHash = null;
+    _pinSalt = null;
+    await prefs.remove('pin_hash');
+    await prefs.remove('pin_salt');
+    notifyListeners();
+  }
+
+  Future<void> setPalette(String id) async {
+    paletteId = paletteById(id).id;
+    await prefs.setString('palette', paletteId);
+    notifyListeners();
+  }
+
   Future<void> load() async {
     final l = prefs.getString('lang');
     lang = (l == 'ar' || l == 'fr') ? l! : 'fr';
     dark = prefs.getBool('dark') ?? false;
+    paletteId = paletteById(prefs.getString('palette')).id;
+    _pinHash = prefs.getString('pin_hash');
+    _pinSalt = prefs.getString('pin_salt');
     refs = _decode(prefs.getString('refs'), RefRanges.fromMap, RefRanges.defaults());
     profile = _decode(prefs.getString('profile'), PatientProfile.fromMap, const PatientProfile());
+    // L'ancien nom par defaut (pre-rempli) est retire : le champ est vide.
+    if (profile.nameFr == 'Fatma Zahra Belqas' &&
+        profile.nameAr == 'فاطمة الزهراء بلقاس') {
+      final m = profile.toMap();
+      m['nameFr'] = '';
+      m['nameAr'] = '';
+      profile = PatientProfile.fromMap(m);
+      if (prefs.getString('profile') != null) {
+        await prefs.setString('profile', jsonEncode(profile.toMap()));
+      }
+    }
     await reload();
   }
 

@@ -91,7 +91,7 @@ class _HomeShellState extends State<HomeShell> {
                 margin: const EdgeInsets.all(12),
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  gradient: kHeaderGradient,
+                  gradient: context.brandGradient,
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Column(
@@ -99,8 +99,7 @@ class _HomeShellState extends State<HomeShell> {
                   children: [
                     const Icon(Icons.spa_rounded, color: Colors.white, size: 30),
                     const SizedBox(height: 10),
-                    Text(
-                        st.lang == 'ar' ? st.profile.nameAr : st.profile.nameFr,
+                    Text(st.displayName,
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 20,

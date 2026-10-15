@@ -113,9 +113,10 @@ List<_Event> _timeline(AppState st) {
 String buildHistoryText(AppState st, {DateTime? now}) {
   final s = st.s;
   final p = st.profile;
-  final name = st.lang == 'ar' ? p.nameAr : p.nameFr;
   final b = StringBuffer()
-    ..writeln('${s.t('app_title')} – $name')
+    ..writeln(st.hasName
+        ? '${s.t('app_title')} – ${st.displayName}'
+        : s.t('app_title'))
     ..writeln('${s.t('export_date')} : ${formatDate(now ?? DateTime.now())}')
     ..writeln()
     ..writeln('${s.t('date')}\t${s.t('timeline_type')}\t${s.t('timeline_detail')}');

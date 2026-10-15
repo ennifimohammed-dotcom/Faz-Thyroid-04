@@ -8,6 +8,7 @@ import '../core/format.dart';
 import '../core/medical.dart';
 import '../l10n/strings.dart';
 import '../models/models.dart';
+import 'chart_utils.dart';
 
 Color levelColor(Level l) {
   switch (l) {
@@ -84,9 +85,9 @@ class SectionCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(7),
                         decoration: BoxDecoration(
-                            color: kRose.withValues(alpha: 0.12),
+                            color: context.brand.withValues(alpha: 0.12),
                             shape: BoxShape.circle),
-                        child: Icon(icon, size: 18, color: kRose),
+                        child: Icon(icon, size: 18, color: context.brand),
                       ),
                       const SizedBox(width: 10),
                     ],
@@ -190,7 +191,7 @@ class DateField extends StatelessWidget {
         labelText: label,
         hintText: s.t('date_hint'),
         suffixIcon: IconButton(
-            icon: const Icon(Icons.event_rounded, color: kRose),
+            icon: Icon(Icons.event_rounded, color: context.brand),
             onPressed: () => _pick(context)),
       ),
       validator: (v) {
@@ -265,7 +266,8 @@ class FormPage extends StatelessWidget {
   }
 }
 
-/// Graphique de tendance (fl_chart) avec bande de reference optionnelle.
+/// Graphique de tendance (fl_chart) : bande de reference, valeur affichee
+/// au-dessus de chaque point et dates espacees sans chevauchement.
 class TrendChart extends StatelessWidget {
   const TrendChart({
     super.key,
@@ -278,13 +280,17 @@ class TrendChart extends StatelessWidget {
     this.xMax,
     this.yMin,
     this.yMax,
-    this.height = 200,
+    this.height = 220,
   });
   final List<ChartPoint> points;
   final Color color;
   final String emptyText;
   final double? refMin, refMax, xMin, xMax, yMin, yMax;
   final double height;
+
+  // Marges du graphique (le calcul des positions en depend).
+  static const double _padL = 4, _padT = 14, _padR = 18, _padB = 28;
+  static const double _leftTitles = 40;
 
   @override
   Widget build(BuildContext context) {
@@ -305,84 +311,154 @@ class TrendChart extends StatelessWidget {
     final rMax = refMax;
     if (rMin != null) lo = math.min(lo, rMin);
     if (rMax != null) hi = math.max(hi, rMax);
-    final pad = (hi - lo) == 0 ? 1.0 : (hi - lo) * 0.15;
+    final pad = (hi - lo) == 0 ? 1.0 : (hi - lo) * 0.18;
     final minY = yMin ?? math.max(0.0, lo - pad);
     final maxY = yMax ?? hi + pad;
     final green = Colors.green.shade600;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final surface = Theme.of(context).colorScheme.surface;
 
     String axisNum(double v) => formatNum(double.parse(v.toStringAsFixed(2)));
 
-    return SizedBox(
-      height: height,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(4, 8, 12, 0),
-        child: LineChart(
-          LineChartData(
-            minX: minX,
-            maxX: maxX,
-            minY: minY,
-            maxY: maxY,
-            gridData: const FlGridData(show: true, drawVerticalLine: false),
-            borderData: FlBorderData(show: false),
-            rangeAnnotations: RangeAnnotations(
-              horizontalRangeAnnotations: [
-                if (rMin != null && rMax != null)
-                  HorizontalRangeAnnotation(
-                      y1: rMin, y2: rMax, color: green.withValues(alpha: 0.12)),
-              ],
-            ),
-            extraLinesData: ExtraLinesData(
-              horizontalLines: [
-                if (rMin != null)
-                  HorizontalLine(
-                      y: rMin, color: green, strokeWidth: 1, dashArray: [6, 4]),
-                if (rMax != null)
-                  HorizontalLine(
-                      y: rMax, color: green, strokeWidth: 1, dashArray: [6, 4]),
-              ],
-            ),
-            titlesData: FlTitlesData(
-              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              leftTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  reservedSize: 38,
-                  getTitlesWidget: (v, meta) => Text(axisNum(v),
-                      style: const TextStyle(fontSize: 10)),
+    return LayoutBuilder(builder: (context, c) {
+      final w = c.maxWidth.isFinite ? c.maxWidth : 320.0;
+      final plotW = math.max(10.0, w - _padL - _padR - _leftTitles);
+      final plotH = math.max(10.0, height - _padT - _padB);
+      final ticks = evenTicks(minX, maxX, tickCount(plotW));
+      final span = maxX - minX;
+
+      double px(double x) => _padL + _leftTitles + fraction(x, minX, maxX) * plotW;
+      double py(double y) => _padT + (1 - fraction(y, minY, maxY)) * plotH;
+
+      // Etiquettes de valeurs : si deux points sont proches, on alterne
+      // dessus / dessous pour qu'elles restent lisibles.
+      final labels = <Widget>[];
+      var prevX = -1000.0;
+      var prevAbove = false;
+      for (final p in points) {
+        final x = px(p.x);
+        final y = py(p.value);
+        var above = true;
+        if (x - prevX < 46) above = !prevAbove;
+        prevX = x;
+        prevAbove = above;
+        final hasRef = rMin != null || rMax != null;
+        final tone = hasRef
+            ? levelColor(levelOf(p.value, rMin, rMax))
+            : color;
+        final dx = x < 30 ? -0.1 : (x > w - 40 ? -0.9 : -0.5);
+        labels.add(Positioned(
+          left: x,
+          top: y,
+          child: IgnorePointer(
+            child: FractionalTranslation(
+              translation: Offset(dx, above ? -1.35 : 0.35),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: surface.withValues(alpha: 0.88),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: tone.withValues(alpha: 0.6)),
                 ),
-              ),
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  reservedSize: 28,
-                  interval: (maxX - minX) / 3,
-                  getTitlesWidget: (v, meta) {
-                    final d = DateTime.fromMillisecondsSinceEpoch(
-                        (v * 86400000).round());
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Text(formatShortDate(d),
-                          style: const TextStyle(fontSize: 10)),
-                    );
-                  },
-                ),
+                child: Text(axisNum(p.value),
+                    style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
+                        color: tone)),
               ),
             ),
-            lineBarsData: [
-              LineChartBarData(
-                spots: [for (final p in points) FlSpot(p.x, p.value)],
-                isCurved: false,
-                color: color,
-                barWidth: 3,
-                dotData: const FlDotData(show: true),
-                belowBarData: BarAreaData(show: false),
-              ),
-            ],
           ),
+        ));
+      }
+
+      return SizedBox(
+        height: height,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned.fill(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(_padL, _padT, _padR, _padB),
+                child: LineChart(
+                  LineChartData(
+                    minX: minX,
+                    maxX: maxX,
+                    minY: minY,
+                    maxY: maxY,
+                    gridData:
+                        const FlGridData(show: true, drawVerticalLine: false),
+                    borderData: FlBorderData(show: false),
+                    rangeAnnotations: RangeAnnotations(
+                      horizontalRangeAnnotations: [
+                        if (rMin != null && rMax != null)
+                          HorizontalRangeAnnotation(
+                              y1: rMin,
+                              y2: rMax,
+                              color: green.withValues(alpha: 0.12)),
+                      ],
+                    ),
+                    extraLinesData: ExtraLinesData(
+                      horizontalLines: [
+                        if (rMin != null)
+                          HorizontalLine(
+                              y: rMin,
+                              color: green,
+                              strokeWidth: 1,
+                              dashArray: [6, 4]),
+                        if (rMax != null)
+                          HorizontalLine(
+                              y: rMax,
+                              color: green,
+                              strokeWidth: 1,
+                              dashArray: [6, 4]),
+                      ],
+                    ),
+                    titlesData: FlTitlesData(
+                      topTitles:
+                          const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      rightTitles:
+                          const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      bottomTitles:
+                          const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: _leftTitles,
+                          getTitlesWidget: (v, meta) => Text(axisNum(v),
+                              style: TextStyle(fontSize: 10, color: onSurface)),
+                        ),
+                      ),
+                    ),
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: [for (final p in points) FlSpot(p.x, p.value)],
+                        isCurved: false,
+                        color: color,
+                        barWidth: 3,
+                        dotData: const FlDotData(show: true),
+                        belowBarData: BarAreaData(show: false),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Dates de l'axe horizontal : positions calculees, jamais superposees.
+            for (final t in ticks)
+              Positioned(
+                left: px(t),
+                top: height - _padB + 8,
+                child: FractionalTranslation(
+                  translation: const Offset(-0.5, 0),
+                  child: Text(tickLabel(t, span),
+                      style: TextStyle(fontSize: 10.5, color: onSurface)),
+                ),
+              ),
+            ...labels,
+          ],
         ),
-      ),
-    );
+      );
+    });
   }
 }
 

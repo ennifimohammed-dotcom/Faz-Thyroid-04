@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 
+import 'app_lock.dart';
 import 'ocr_parser.dart';
 
 /// Pont natif (MainActivity.kt) : Telechargements, partage, photos.
@@ -19,18 +20,28 @@ class FileSaver {
     return uri;
   }
 
-  static Future<void> share(String uri) async {
-    await _channel.invokeMethod<void>('shareFile', {'uri': uri});
-  }
+  static Future<void> share(String uri) => _external(
+      () => _channel.invokeMethod<void>('shareFile', {'uri': uri}));
 
   /// Choisit une photo dans la galerie ; la copie dans le stockage prive de
   /// l'application. Retourne le chemin du fichier, ou null si annule.
-  static Future<String?> pickImage() =>
-      _channel.invokeMethod<String>('pickImage');
+  static Future<String?> pickImage() => _external(
+      () => _channel.invokeMethod<String>('pickImage'));
 
   /// Prend une photo avec l'appareil photo ; meme retour que [pickImage].
-  static Future<String?> captureImage() =>
-      _channel.invokeMethod<String>('captureImage');
+  static Future<String?> captureImage() => _external(
+      () => _channel.invokeMethod<String>('captureImage'));
+
+  /// Marque une action qui quitte l'application (le verrou ne se declenche pas
+  /// au retour).
+  static Future<T> _external<T>(Future<T> Function() action) async {
+    AppLock.beginExternal();
+    try {
+      return await action();
+    } finally {
+      AppLock.endExternal();
+    }
+  }
 
   /// Lit le texte d'une photo avec l'OCR du telephone (ML Kit embarque,
   /// aucun envoi sur Internet). Retourne les lignes avec leur position.

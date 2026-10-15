@@ -72,7 +72,7 @@ class _SymptomsScreenState extends State<SymptomsScreen> {
                   ),
                   TrendChart(
                     points: pts,
-                    color: kRose,
+                    color: Theme.of(context).colorScheme.primary,
                     emptyText: s.t('no_data'),
                     yMin: 0,
                     yMax: 3,

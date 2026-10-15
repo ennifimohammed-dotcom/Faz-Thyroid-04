@@ -76,8 +76,8 @@ class RefRanges {
 
 class PatientProfile {
   const PatientProfile({
-    this.nameFr = 'Fatma Zahra Belqas',
-    this.nameAr = 'فاطمة الزهراء بلقاس',
+    this.nameFr = '',
+    this.nameAr = '',
     this.birthDate = '',
     this.weight = '89 kg (date à confirmer / يجب تأكيد التاريخ)',
     this.height = '',
@@ -382,7 +382,9 @@ class ChartPoint {
   const ChartPoint(this.date, this.value);
   final DateTime date;
   final double value;
-  double get x => date.millisecondsSinceEpoch / 86400000.0;
+  double get x =>
+      DateTime.utc(date.year, date.month, date.day).millisecondsSinceEpoch /
+      86400000.0;
 }
 
 const kAttThyroid = 'thyroid';

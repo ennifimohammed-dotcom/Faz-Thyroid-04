@@ -110,7 +110,7 @@ class _ExportScreenState extends State<ExportScreen> {
                 children: [
                   SelectableText(savedName!,
                       style: const TextStyle(
-                          fontWeight: FontWeight.w700, color: kRoseDeep)),
+                          fontWeight: FontWeight.w700, color: context.brandDeep)),
                   const SizedBox(height: 10),
                   OutlinedButton.icon(
                     onPressed: _share,

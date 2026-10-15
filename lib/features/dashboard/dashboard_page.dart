@@ -25,7 +25,7 @@ class DashboardPage extends StatelessWidget {
     final prescribed = st.latestPrescribed;
     final next = st.nextControlDate;
     final na = s.t('not_available');
-    final name = st.lang == 'ar' ? st.profile.nameAr : st.profile.nameFr;
+    final name = st.displayName;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -33,6 +33,10 @@ class DashboardPage extends StatelessWidget {
         _Header(
           greeting: s.t('greeting'),
           name: name,
+          onTap: st.hasName
+              ? null
+              : () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen())),
           subtitle: lastDate == null
               ? s.t('take_care')
               : '${s.t('last_bilan')} : ${formatDate(lastDate)}',
@@ -42,7 +46,7 @@ class DashboardPage extends StatelessWidget {
           padding: const EdgeInsetsDirectional.only(start: 4, bottom: 4),
           child: Text(s.t('current_state'),
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700, color: kRoseDeep)),
+                  fontWeight: FontWeight.w700, color: context.brandDeep)),
         ),
         MetricCard(
             s: s,
@@ -196,19 +200,26 @@ class MetricCard extends StatelessWidget {
 
 class _Header extends StatelessWidget {
   const _Header(
-      {required this.greeting, required this.name, required this.subtitle});
+      {required this.greeting,
+      required this.name,
+      required this.subtitle,
+      this.onTap});
   final String greeting, name, subtitle;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(28),
+      child: Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: kHeaderGradient,
+        gradient: context.brandGradient,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-              color: kRose.withValues(alpha: 0.25),
+              color: context.brand.withValues(alpha: 0.25),
               blurRadius: 18,
               offset: const Offset(0, 8)),
         ],
@@ -243,6 +254,7 @@ class _Header extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }
