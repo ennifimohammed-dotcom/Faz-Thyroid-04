@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../app/palette.dart';
 import '../../core/format.dart';
 import '../../database/schema.dart';
 import '../../l10n/strings.dart';
