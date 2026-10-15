@@ -112,7 +112,6 @@ List<_Event> _timeline(AppState st) {
 /// Historique complet en texte (copiable : une ligne par evenement).
 String buildHistoryText(AppState st, {DateTime? now}) {
   final s = st.s;
-  final p = st.profile;
   final b = StringBuffer()
     ..writeln(st.hasName
         ? '${s.t('app_title')} – ${st.displayName}'
