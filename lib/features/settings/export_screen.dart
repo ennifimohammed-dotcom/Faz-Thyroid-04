@@ -109,7 +109,7 @@ class _ExportScreenState extends State<ExportScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SelectableText(savedName!,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontWeight: FontWeight.w700, color: context.brandDeep)),
                   const SizedBox(height: 10),
                   OutlinedButton.icon(
